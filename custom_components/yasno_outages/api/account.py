@@ -136,7 +136,7 @@ class AccountApi:
         self,
         account_id: int,
     ) -> YasnoRecommendedAmount | None:
-        """Fetch the recommended top-up amount (balance, next accrual) for an account."""
+        """Fetch the recommended top-up amount (balance, next accrual)."""
         url = RECOMMENDED_AMOUNT_ENDPOINT.format(account_id=account_id)
         async with aiohttp.ClientSession() as session:
             data = await self._get_json(session, url)
