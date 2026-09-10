@@ -305,6 +305,18 @@
       },
       "tariff_transfer_price": {
         "name": "Тариф на передачу"
+      },
+      "recommended_payment_amount": {
+        "name": "Рекомендована сума платежу"
+      },
+      "last_month_consumption_day": {
+        "name": "Споживання за минулий місяць (День)"
+      },
+      "last_month_consumption_night": {
+        "name": "Споживання за минулий місяць (Ніч)"
+      },
+      "last_month_charged": {
+        "name": "Нараховано за минулий місяць"
       }
     }
   },

@@ -215,6 +215,46 @@ ACCOUNT_SENSOR_TYPES: tuple[YasnoOutagesSensorDescription, ...] = (
         entity_category=EntityCategory.DIAGNOSTIC,
         val_func=lambda coordinator: coordinator.tariff_transfer_price,
     ),
+    YasnoOutagesSensorDescription(
+        key="recommended_payment_amount",
+        translation_key="recommended_payment_amount",
+        icon="mdi:cash-plus",
+        state_class="measurement",
+        native_unit_of_measurement="UAH",
+        suggested_display_precision=2,
+        val_func=lambda coordinator: coordinator.recommended_payment_amount,
+        attr_func=lambda coordinator: {
+            "next_accrual_end": coordinator.next_accrual_end,
+        },
+    ),
+    YasnoOutagesSensorDescription(
+        key="last_month_consumption_day",
+        translation_key="last_month_consumption_day",
+        icon="mdi:weather-sunny",
+        state_class="measurement",
+        native_unit_of_measurement="kWh",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.last_month_consumption_day,
+    ),
+    YasnoOutagesSensorDescription(
+        key="last_month_consumption_night",
+        translation_key="last_month_consumption_night",
+        icon="mdi:weather-night",
+        state_class="measurement",
+        native_unit_of_measurement="kWh",
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.last_month_consumption_night,
+    ),
+    YasnoOutagesSensorDescription(
+        key="last_month_charged",
+        translation_key="last_month_charged",
+        icon="mdi:receipt-text",
+        state_class="measurement",
+        native_unit_of_measurement="UAH",
+        suggested_display_precision=2,
+        entity_category=EntityCategory.DIAGNOSTIC,
+        val_func=lambda coordinator: coordinator.last_month_charged,
+    ),
 )
 
 

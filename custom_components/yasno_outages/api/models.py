@@ -206,3 +206,40 @@ class YasnoTariff:
         if not tier:
             return None
         return tier.price_for_zone(zone)
+
+
+@dataclass(frozen=True)
+class YasnoRecommendedAmount:
+    """Represents the recommended top-up amount for a prepaid account."""
+
+    balance: float
+    recommended_amount: float | None
+    recommended_amounts: tuple[float, ...]
+    next_accrual_start: datetime.datetime | None
+    next_accrual_end: datetime.datetime | None
+
+
+@dataclass(frozen=True)
+class YasnoConsumption:
+    """Represents a single zone's (Day/Night/AllTime) consumption value."""
+
+    zone: str
+    value: float
+
+
+@dataclass(frozen=True)
+class YasnoAccountBookMonth:
+    """Represents one month's entry in the account book (consumption/billing)."""
+
+    date: datetime.datetime
+    consumptions: tuple[YasnoConsumption, ...]
+    charged: float
+    paid: float
+    balance_end_of_month: float | None
+
+    def consumption_for_zone(self, zone: str) -> float | None:
+        """Get the consumption value for a specific zone (e.g. Day/Night)."""
+        for consumption in self.consumptions:
+            if consumption.zone == zone:
+                return consumption.value
+        return None

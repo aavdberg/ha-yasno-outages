@@ -305,6 +305,18 @@
       },
       "tariff_transfer_price": {
         "name": "Transporttarief"
+      },
+      "recommended_payment_amount": {
+        "name": "Aanbevolen Betaalbedrag"
+      },
+      "last_month_consumption_day": {
+        "name": "Verbruik Vorige Maand (Dag)"
+      },
+      "last_month_consumption_night": {
+        "name": "Verbruik Vorige Maand (Nacht)"
+      },
+      "last_month_charged": {
+        "name": "In Rekening Gebracht Vorige Maand"
       }
     }
   },
