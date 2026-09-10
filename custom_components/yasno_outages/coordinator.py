@@ -644,11 +644,14 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def _last_completed_month(self) -> YasnoAccountBookMonth | None:
         """Get the most recent fully completed month in the account book."""
         # The current (in-progress) month has no consumption data yet, so
-        # skip entries without any recorded consumption.
-        for month in self._account_book_history:
-            if month.consumptions:
-                return month
-        return None
+        # skip entries without any recorded consumption. Select by max date
+        # rather than list order, since the API's ordering isn't guaranteed.
+        completed_months = [
+            month for month in self._account_book_history if month.consumptions
+        ]
+        if not completed_months:
+            return None
+        return max(completed_months, key=lambda month: month.date)
 
     @property
     def last_month_consumption_day(self) -> float | None:
