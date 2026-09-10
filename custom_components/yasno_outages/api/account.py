@@ -15,19 +15,26 @@ import logging
 import aiohttp
 
 from .const import (
+    ACCOUNT_BOOK_AVAILABLE_YEARS_ENDPOINT,
+    ACCOUNT_BOOK_HISTORY_ENDPOINT,
     ACCOUNTS_ENDPOINT,
     AUTH_ADDRESSES_ENDPOINT,
     AUTH_CURRENT_SLOTS_ENDPOINT,
     CONTRACTS_ENDPOINT,
     DEBT_ENDPOINT,
+    LAST_FEES_ENDPOINT,
+    RECOMMENDED_AMOUNT_ENDPOINT,
     TARIFF_ENDPOINT,
 )
 from .models import (
     YasnoAccount,
+    YasnoAccountBookMonth,
     YasnoAccountDebt,
     YasnoAuthAddress,
+    YasnoConsumption,
     YasnoContract,
     YasnoMeterReading,
+    YasnoRecommendedAmount,
     YasnoTariff,
     YasnoTariffPeriod,
     YasnoTariffPrice,
@@ -124,6 +131,59 @@ class AccountApi:
         if not data:
             return None
         return self._parse_tariff(data)
+
+    async def fetch_recommended_amount(
+        self,
+        account_id: int,
+    ) -> YasnoRecommendedAmount | None:
+        """Fetch the recommended top-up amount (balance, next accrual)."""
+        url = RECOMMENDED_AMOUNT_ENDPOINT.format(account_id=account_id)
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_json(session, url)
+        if not data:
+            return None
+        return self._parse_recommended_amount(data)
+
+    async def fetch_account_book_history(
+        self,
+        account_id: int,
+        limit: int = 3,
+    ) -> list[YasnoAccountBookMonth]:
+        """Fetch the most recent months of consumption/billing history."""
+        url = ACCOUNT_BOOK_HISTORY_ENDPOINT.format(account_id=account_id)
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_json(
+                session,
+                url,
+                params={"offset": 0, "limit": limit},
+            )
+        if not data:
+            return []
+        months = [
+            month for year in data.get("items", []) for month in year.get("months", [])
+        ]
+        return [self._parse_account_book_month(month) for month in months]
+
+    async def fetch_account_book_available_years(self, account_id: int) -> list[int]:
+        """Fetch the list of years for which account book history is available."""
+        url = ACCOUNT_BOOK_AVAILABLE_YEARS_ENDPOINT.format(account_id=account_id)
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_json(session, url)
+        if not data:
+            return []
+        return list(data.get("years", []))
+
+    async def fetch_last_fees(self) -> dict:
+        """
+        Fetch the last fees entry.
+
+        As observed in captured traffic, this endpoint currently always
+        returns an empty object regardless of account state; kept for API
+        completeness / future use.
+        """
+        async with aiohttp.ClientSession() as session:
+            data = await self._get_json(session, LAST_FEES_ENDPOINT)
+        return data or {}
 
     @staticmethod
     def _parse_account(item: dict) -> YasnoAccount:
@@ -237,4 +297,49 @@ class AccountApi:
             ),
             transfer_price=(float(transfer["value"]) if "value" in transfer else None),
             periods=tuple(periods),
+        )
+
+    @staticmethod
+    def _parse_recommended_amount(item: dict) -> YasnoRecommendedAmount:
+        """Parse a raw recommended-amount entry into a YasnoRecommendedAmount."""
+        next_accrual = item.get("nextAccrual") or {}
+        start_raw = next_accrual.get("start")
+        end_raw = next_accrual.get("end")
+        recommended_amount = item.get("recommendedAmount")
+        return YasnoRecommendedAmount(
+            balance=float(item.get("balance", 0)),
+            recommended_amount=(
+                float(recommended_amount) if recommended_amount is not None else None
+            ),
+            recommended_amounts=tuple(
+                float(amount) for amount in item.get("recommendedAmounts", [])
+            ),
+            next_accrual_start=(
+                datetime.datetime.fromisoformat(start_raw) if start_raw else None
+            ),
+            next_accrual_end=(
+                datetime.datetime.fromisoformat(end_raw) if end_raw else None
+            ),
+        )
+
+    @staticmethod
+    def _parse_account_book_month(item: dict) -> YasnoAccountBookMonth:
+        """Parse a raw account-book month entry into a YasnoAccountBookMonth."""
+        consumptions = tuple(
+            YasnoConsumption(zone=entry["zone"], value=float(entry["value"]))
+            for entry in item.get("consumptions", [])
+        )
+        # Past months use "balanceEndOfMonth"; the current (in-progress) month
+        # only has "balance" since it hasn't ended yet.
+        balance_end_of_month = item.get("balanceEndOfMonth", item.get("balance"))
+        return YasnoAccountBookMonth(
+            date=datetime.datetime.fromisoformat(item["date"]),
+            consumptions=consumptions,
+            charged=float(item.get("charged", 0)),
+            paid=float(item.get("paid", 0)),
+            balance_end_of_month=(
+                float(balance_end_of_month)
+                if balance_end_of_month is not None
+                else None
+            ),
         )

@@ -30,8 +30,10 @@ from .api.const import (
 from .api.models import (
     OutageSource,
     YasnoAccount,
+    YasnoAccountBookMonth,
     YasnoAccountDebt,
     YasnoContract,
+    YasnoRecommendedAmount,
     YasnoTariff,
 )
 from .const import (
@@ -219,6 +221,8 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
         self._contract: YasnoContract | None = None
         self._debt: YasnoAccountDebt | None = None
         self._tariff: YasnoTariff | None = None
+        self._recommended_amount: YasnoRecommendedAmount | None = None
+        self._account_book_history: list[YasnoAccountBookMonth] = []
 
     async def _async_update_data(self) -> None:
         """Fetch data from new Yasno API."""
@@ -319,9 +323,17 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
             debts = await account_api.fetch_debt([account.id])
             self._debt = debts.get(account.id)
             self._tariff = await account_api.fetch_tariff(account.id)
+            self._recommended_amount = await account_api.fetch_recommended_amount(
+                account.id,
+            )
+            self._account_book_history = await account_api.fetch_account_book_history(
+                account.id,
+            )
         else:
             self._debt = None
             self._tariff = None
+            self._recommended_amount = None
+            self._account_book_history = []
 
     def _event_to_state(self, event: OutageEvent | None) -> str:
         """Map outage event to electricity state."""
@@ -613,6 +625,51 @@ class YasnoOutagesCoordinator(DataUpdateCoordinator):
     def tariff_transfer_price(self) -> float | None:
         """Get the DSO's transfer (transport) price per kWh (UAH)."""
         return self._tariff.transfer_price if self._tariff else None
+
+    @property
+    def recommended_payment_amount(self) -> float | None:
+        """Get the recommended top-up amount (UAH) for the account."""
+        if not self._recommended_amount:
+            return None
+        return self._recommended_amount.recommended_amount
+
+    @property
+    def next_accrual_end(self) -> datetime.datetime | None:
+        """Get the end date of the next accrual (billing) period."""
+        if not self._recommended_amount:
+            return None
+        return self._recommended_amount.next_accrual_end
+
+    @property
+    def _last_completed_month(self) -> YasnoAccountBookMonth | None:
+        """Get the most recent fully completed month in the account book."""
+        # The current (in-progress) month has no consumption data yet, so
+        # skip entries without any recorded consumption. Select by max date
+        # rather than list order, since the API's ordering isn't guaranteed.
+        completed_months = [
+            month for month in self._account_book_history if month.consumptions
+        ]
+        if not completed_months:
+            return None
+        return max(completed_months, key=lambda month: month.date)
+
+    @property
+    def last_month_consumption_day(self) -> float | None:
+        """Get last completed month's day-zone consumption (kWh)."""
+        month = self._last_completed_month
+        return month.consumption_for_zone(TARIFF_ZONE_DAY) if month else None
+
+    @property
+    def last_month_consumption_night(self) -> float | None:
+        """Get last completed month's night-zone consumption (kWh)."""
+        month = self._last_completed_month
+        return month.consumption_for_zone(TARIFF_ZONE_NIGHT) if month else None
+
+    @property
+    def last_month_charged(self) -> float | None:
+        """Get last completed month's charged (billed) amount (UAH)."""
+        month = self._last_completed_month
+        return month.charged if month else None
 
     def get_outage_at(
         self,

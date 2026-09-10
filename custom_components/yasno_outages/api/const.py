@@ -37,7 +37,6 @@ API_STATUS_NO_OUTAGES: Final = "NoOutages"
 API_STATUS_SCHEDULE_APPLIES: Final = "ScheduleApplies"
 API_STATUS_WAITING_FOR_SCHEDULE: Final = "WaitingForSchedule"
 API_STATUS_EMERGENCY_SHUTDOWNS: Final = "EmergencyShutdowns"
-API_STATUS_NO_OUTAGES: Final = "NoOutages"
 
 # API Block names
 API_KEY_TODAY: Final = "today"
@@ -104,4 +103,15 @@ RECOMMENDED_AMOUNT_ENDPOINT: Final = (
 )
 PAYMENT_HISTORY_ENDPOINT: Final = (
     "https://app.yasno.ua/api/payment-service/v2/payment/history"
+)
+ACCOUNT_BOOK_HISTORY_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/account-service/users/me/accounts/b2c/"
+    "{account_id}/account-book/history"
+)
+ACCOUNT_BOOK_AVAILABLE_YEARS_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/account-service/users/me/accounts/b2c/"
+    "{account_id}/account-book/available-years"
+)
+LAST_FEES_ENDPOINT: Final = (
+    "https://app.yasno.ua/api/account-service/users/me/accounts/b2c/last-fees"
 )

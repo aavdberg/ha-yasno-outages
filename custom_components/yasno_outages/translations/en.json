@@ -305,6 +305,18 @@
       },
       "tariff_transfer_price": {
         "name": "Tariff Transfer Price"
+      },
+      "recommended_payment_amount": {
+        "name": "Recommended Payment Amount"
+      },
+      "last_month_consumption_day": {
+        "name": "Last Month Consumption (Day)"
+      },
+      "last_month_consumption_night": {
+        "name": "Last Month Consumption (Night)"
+      },
+      "last_month_charged": {
+        "name": "Last Month Charged Amount"
       }
     }
   },
